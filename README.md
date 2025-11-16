@@ -16,11 +16,11 @@ This project analyzes Tokyo’s rental housing landscape to support strategic de
 - Multiple linear regression modeling (sklearn)
 
 ## Key Insights
--
--
--
--
--
+- The 95% confidence interval for the mean rent is ¥101,696 ± 2,408.
+- Floor area shows the strongest correlation with rent, whereas station proximity exhibits little to no correlation.
+- Building size is positively correlated with rent, while building age shows a negative correlation.
+- A linear regression model using floor plan, area, building age, building size, and floor level explains 86.8% of the variance in rent (R² = 0.868).
+- With the possibility of nonlinearity or missing features, a more robust model should be employed for future analyses. 
 
 
 ## Data Source Disclosure
