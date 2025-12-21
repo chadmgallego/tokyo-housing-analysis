@@ -25,3 +25,7 @@ This project analyzes Tokyo’s rental housing landscape to support strategic de
 
 ## Data Source Disclosure
 All rental listing data was collected from *SUUMO.jp* via web scraping. The dataset includes publicly available information such as rental prices, fees, floor plans, apartment sizes, and train stations. This project respects the site’s terms of use, and the data is used solely for analysis and operational purposes.
+
+## Files
+- `tokyo_housing_analysis.ipynb`: Full Jupyter notebook with code, visualizations, and insights
+- `tokyo_housing.csv`: Processed dataset of Tokyo housing metrics and features
