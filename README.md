@@ -1,5 +1,5 @@
 # Tokyo Housing Database & Price Forecasting
-This project analyzes Tokyo’s rental housing landscape to support strategic decisions at Student Mobilization, Inc. The process involves scraping over 1,000 listings from *SUUMO.jp*, storing and organizing the data in an SQLite database, and applying regression models to forecast rental prices based on features such as floor plan, area, and proximity to train stations. The goal is to streamline housing logistics for new field staff by simplifying the search for affordable and well-located housing options.
+This project analyzes Tokyo’s rental housing landscape to support strategic decisions at Student Mobilization, Inc. The process involves scraping over 1,200 listings from *SUUMO.jp*, storing and organizing the data in an SQLite database, and applying regression models to forecast rental prices based on features such as floor plan, area, and building size. The goal is to streamline housing logistics for new field staff by simplifying the search for affordable and well-located housing options.
 
 ## Key Questions
 - Can we predict rental prices based on key features?
@@ -13,7 +13,7 @@ This project analyzes Tokyo’s rental housing landscape to support strategic de
 - Web scraping with BeautifulSoup (*SUUMO.jp*)
 - SQLite for data warehousing, querying, cleaning, and feature engineering
 - Exploratory Data Analysis (EDA)
-- Multiple linear regression modeling (sklearn)
+- Multivariate linear regression modeling (sklearn)
 
 ## Key Insights
 - The 95% confidence interval for the mean rent is ¥101,696 ± 2,408.
