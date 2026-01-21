@@ -1,10 +1,33 @@
+
 -- Remove the view if it already exists
 DROP VIEW IF EXISTS TOKYO_HOUSING;
 
 -- Create a cleaned + feature-engineered housing view
 CREATE VIEW TOKYO_HOUSING AS
 
-WITH STANDARDIZED_LISTINGS AS (
+-- Deduplicate listings that appear multiple times due to scraping artifacts.
+-- Listings are considered duplicates if they share the same title, address,
+-- rent, floor plan, and floor.
+
+-- ROW_NUMBER() is used to retain a single representative row per duplicate group.
+-- Ordering by `img` provides a stable (though not necessarily unique) tie-breaker
+WITH DEDUPLICATED_LISTINGS AS (
+    SELECT * 
+    FROM  (
+        SELECT 
+            *,
+            ROW_NUMBER() 
+                OVER (
+                    PARTITION BY title, address, rent, floor_plan, floor
+                    ORDER BY img
+                )
+                AS rn
+        FROM HOUSING_DATA 
+        )
+    WHERE rn = 1
+),
+
+STANDARDIZED_LISTINGS AS (
     SELECT 
         -- Basic identifiers
         img, title, address, 
@@ -32,13 +55,13 @@ WITH STANDARDIZED_LISTINGS AS (
         
         -- Remove building size label 
         RTRIM(building_size, '階建') AS building_size,
-        
+
         -- Station-related features
         stations,
         nearest_station,
         distance_to_nearest_station,
         ROUND(avg_distance_to_stations, 2) AS avg_distance_to_stations
-    FROM HOUSING_DATA
+    FROM DEDUPLICATED_LISTINGS
 ),
 
 FEATURED_LISTINGS AS (
@@ -53,7 +76,7 @@ FEATURED_LISTINGS AS (
         building_size, nearest_station,
         distance_to_nearest_station, avg_distance_to_stations,
         
-        -- Feature engineering: average rents by station, floor plan, and distance to nearest station
+        -- Average rent by station, floor plan
         ROUND(AVG(rent) 
             OVER (PARTITION BY nearest_station), 2) 
             AS avg_rent_by_station, 
@@ -61,12 +84,20 @@ FEATURED_LISTINGS AS (
             OVER (PARTITION BY floor_plan), 2) 
             AS avg_rent_by_floor_plan,
         
-        -- Price rank relative to other listings near the same station
-        DENSE_RANK() 
-            OVER (PARTITION BY nearest_station ORDER BY rent DESC)
-            AS price_rank_by_station
+        -- Number of listings per station, floor plan
+        COUNT(title)
+            OVER (PARTITION BY nearest_station)
+            AS count_listings_per_station,
+        COUNT(title)
+            OVER (PARTITION BY floor_plan) 
+            AS count_listings_per_floor_plan
     FROM STANDARDIZED_LISTINGS
 )
 
 -- Final output 
 SELECT * FROM FEATURED_LISTINGS
+
+
+
+
+
