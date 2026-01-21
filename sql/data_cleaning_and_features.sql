@@ -16,8 +16,7 @@ WITH DEDUPLICATED_LISTINGS AS (
     FROM  (
         SELECT 
             *,
-            ROW_NUMBER() 
-                OVER (
+            ROW_NUMBER() OVER (
                     PARTITION BY title, address, rent, floor_plan, floor
                     ORDER BY img
                 )
