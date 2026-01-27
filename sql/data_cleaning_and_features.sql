@@ -1,4 +1,3 @@
-
 -- Remove the view if it already exists
 DROP VIEW IF EXISTS TOKYO_HOUSING;
 
@@ -19,10 +18,10 @@ WITH DEDUPLICATED_LISTINGS AS (
             ROW_NUMBER() OVER (
                 PARTITION BY title, address, rent, floor_plan, floor
                 ORDER BY img
-                )
+                ) 
                 AS rn
         FROM HOUSING_DATA 
-        )
+    )
     WHERE rn = 1
 ),
 
@@ -47,14 +46,17 @@ STANDARDIZED_LISTINGS AS (
         END AS floor_plan,
         
         -- Convert area to numeric (square meters)
-        CAST(RTRIM(area, 'm2') AS FLOAT) AS area,
+        CAST(REPLACE(area, 'm2', '') AS FLOAT) AS area,
         
         -- Extract building age in years
-        CAST(LTRIM(RTRIM(building_age, '年'), '築') AS INTEGER) AS building_age,
+        CASE 
+            WHEN building_age LIKE '%新築%' THEN 0
+            ELSE CAST(LTRIM(RTRIM(building_age, '年'), '築') AS INTEGER) 
+        END AS building_age,
         
         -- Remove building size label 
         RTRIM(building_size, '階建') AS building_size,
-
+        
         -- Station-related features
         stations,
         nearest_station,
@@ -95,8 +97,3 @@ FEATURED_LISTINGS AS (
 
 -- Final output 
 SELECT * FROM FEATURED_LISTINGS
-
-
-
-
-
