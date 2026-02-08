@@ -1,3 +1,4 @@
+
 -- Remove the view if it already exists
 DROP VIEW IF EXISTS TOKYO_HOUSING;
 
@@ -9,55 +10,52 @@ CREATE VIEW TOKYO_HOUSING AS
 -- rent, floor plan, and floor.
 
 -- ROW_NUMBER() is used to retain a single representative row per duplicate group.
--- Ordering by `img` provides a stable (though not necessarily unique) tie-breaker
+-- Ordering by `url` provides a stable and unique tie-breaker
 WITH DEDUPLICATED_LISTINGS AS (
     SELECT * 
     FROM  (
         SELECT 
             *,
             ROW_NUMBER() OVER (
-                PARTITION BY title, address, rent, floor_plan, floor
-                ORDER BY img
+                PARTITION BY title, floor, floor_plan, area, rent
+                ORDER BY url
                 ) 
                 AS rn
-        FROM HOUSING_DATA 
+        FROM HOUSING_DATA_RAW
     )
     WHERE rn = 1
 ),
 
 STANDARDIZED_LISTINGS AS (
     SELECT 
-        -- Basic identifiers
-        img, title, address, 
+        url, title, address, 
         
-        -- Convert rent/deposit/key money into numeric
-        CAST(RTRIM(rent, '万円') AS FLOAT) * 10000 AS rent,
-        CAST(RTRIM(management_fee, '円') AS FLOAT) AS management_fee,
-        CAST(RTRIM(deposit, '万円') AS FLOAT) * 10000 AS deposit,
-        CAST(RTRIM(key_money, '万円') AS FLOAT) * 10000 AS key_money,
+        CAST(REPLACE(rent, '万円', '') AS FLOAT) * 10000 AS rent,
+        CAST(REPLACE(management_fee, '円', '') AS FLOAT) AS management_fee,
+        CAST(REPLACE(deposit, '万円', '') AS FLOAT) * 10000 AS deposit,
+        CAST(REPLACE(key_money, '万円', '') AS FLOAT) * 10000 AS key_money,
         
-        -- Remove floor label
         RTRIM(floor, '階') AS floor,
         
-        -- Normalize floor plan categories 
         CASE
             WHEN floor_plan = 'ワンルーム' THEN '1R'
             ELSE floor_plan
         END AS floor_plan,
         
-        -- Convert area to numeric (square meters)
         CAST(REPLACE(area, 'm2', '') AS FLOAT) AS area,
         
-        -- Extract building age in years
         CASE 
             WHEN building_age LIKE '%新築%' THEN 0
-            ELSE CAST(LTRIM(RTRIM(building_age, '年'), '築') AS INTEGER) 
+            WHEN building_age LIKE '%以上'
+                THEN CAST(REPLACE(REPLACE(building_age, '築', ''), '年以上', '') AS INTEGER)
+            ELSE CAST(REPLACE(REPLACE(building_age, '築', ''), '年', '') AS INTEGER)
         END AS building_age,
         
-        -- Remove building size label 
-        RTRIM(building_size, '階建') AS building_size,
+        CASE
+            WHEN building_size LIKE '%平屋%' THEN '1'
+            ELSE RTRIM(building_size, '階建')
+        END AS building_size,
         
-        -- Station-related features
         stations,
         nearest_station,
         distance_to_nearest_station,
@@ -67,7 +65,7 @@ STANDARDIZED_LISTINGS AS (
 
 FEATURED_LISTINGS AS (
     SELECT 
-        img, title, address, rent, 
+        url, title, address, rent, 
         
         -- Replace 0 values with NULLs
         NULLIF(management_fee, 0.0) AS management_fee,
@@ -97,3 +95,7 @@ FEATURED_LISTINGS AS (
 
 -- Final output 
 SELECT * FROM FEATURED_LISTINGS
+
+
+
+
