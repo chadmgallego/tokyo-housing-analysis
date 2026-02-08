@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[ ]:
+# In[1]:
 
 
 import requests, sqlite3, sys, re
@@ -18,11 +18,12 @@ from bs4 import BeautifulSoup
 # > - Building a robust housing dataset which includes features such as: `title`, `floor`, `area`, `rent`, `deposit`, etc.
 # > - Storing the resulting dataset in local SQLite table
 
-# In[ ]:
+
+# In[80]:
 
 
 # Define TokyoHousingScraper to:
-# - Scrape Tokyo housing listings from Suumo.jp
+# - Scrape Tokyo housing listings from SUUMO.jp
 # - Collect listings, parse property details
 # - Store the results in SQLite database
 
@@ -61,7 +62,7 @@ class TokyoHousingScraper:
                 next_page = self.base_url + next_page_path.select_one('a').get('href')
             except: break #no more pages to comb through
 
-        #print(f'{len(self.listings)} listings were successfully gathered!')
+        print(f'{len(self.listings)} properties were successfully gathered!')
 
     def parse_station_info(self, item):
 
@@ -109,6 +110,66 @@ class TokyoHousingScraper:
 
         return self.stations_str, self.nearest_station, self.distance_to_nearest_station, self.avg_distance
 
+    def parse_sublistings(self, sub):
+        # Parse a single sublisting HTML element and extract key property details.
+
+        # Parameters 
+            # sub : bs4.element.Tag
+            # A BeautifulSoup <tr> or sublisting element containing rent, fees, floor, 
+            # floor plan, and area information.
+
+        # Returns
+            # A pandas Series with the following fields:
+            # - url: full URL for the sublisting
+            # - rent: rent amount (string)
+            # - management_fee: management fee (string)
+            # - deposit: deposit amount (string)
+            # - key_money: key money / deposit (string)
+            # - floor: floor number or description (string)
+            # - floor_plan: floor plan (string, e.g., 1R, 2LDK)
+            # - area: area in square meters (string)
+
+        sublisting_tags = {
+            # Get URL tags for each sublisting
+            'url_tag': sub.select_one('td.ui-text--midium.ui-text--bold a'),
+
+            # Pricing fields
+            'rent_tag': sub.select_one('span.cassetteitem_price.cassetteitem_price--rent'),
+            'management_fee_tag': sub.select_one('span.cassetteitem_price.cassetteitem_price--administration'),
+            'deposit_tag': sub.select_one('span.cassetteitem_price.cassetteitem_price--deposit'),
+            'key_money_tag': sub.select_one('span.cassetteitem_price.cassetteitem_price--gratuity'),
+
+            # Property details
+            'floor_cells': sub.select('tr.js-cassette_link td'),
+            'floor_plan_tag': sub.select_one('span.cassetteitem_madori'),
+            'area_tag': sub.select_one('span.cassetteitem_menseki')
+        }
+
+        sublisting_data = {
+            # Combine base_url with endpoints for complete URLs
+            'url': self.base_url[:-1] + sublisting_tags['url_tag'].get('href') if sublisting_tags['url_tag'] else None,
+
+            # Pricing fields
+            'rent': sublisting_tags['rent_tag'].get_text().strip() if sublisting_tags['rent_tag'] else None,
+            'management_fee': sublisting_tags['management_fee_tag'].get_text().strip() if sublisting_tags['management_fee_tag'] else None,
+            'deposit': sublisting_tags['deposit_tag'].get_text().strip() if sublisting_tags['deposit_tag'] else None,
+            'key_money': sublisting_tags['key_money_tag'].get_text().strip() if sublisting_tags['key_money_tag'] else None,
+
+            # Floor information is in the third <td> cell of the sublisting row.
+            # If fewer than 3 cells exist, set to None
+            'floor': (
+                sublisting_tags['floor_cells'][2].get_text().strip() 
+                if len(sublisting_tags['floor_cells']) >= 3 
+                else None
+            ),
+
+            'floor_plan': sublisting_tags['floor_plan_tag'].get_text().strip() if sublisting_tags['floor_plan_tag'] else None,
+            'area': sublisting_tags['area_tag'].get_text().strip() if sublisting_tags['area_tag'] else None
+        }
+
+        # Return pandas DataFrame for added columns
+        return pd.Series(sublisting_data)
+
     def build_housing_dataset(self):
 
         # Parse all previously scraped listings into a structured dataset
@@ -120,28 +181,19 @@ class TokyoHousingScraper:
         #   2) Missing fields can be handled consistently later
         # select_one() returns a single value
         # select() returns a list (empty if no tags exist)
-        listing_tags = [
+        building_tags = [
             {
-                # Core listing info
-                'img_tag': item.select_one('div.cassetteitem_object img'),
+                # Core building info
                 'title_tag': item.select_one('div.cassetteitem_content-title'),
                 'address_tag': item.select_one('li.cassetteitem_detail-col1'),
-
-                # Pricing information
-                'rent_tag': item.select_one('span.cassetteitem_price.cassetteitem_price--rent'),
-                'management_fee_tag': item.select_one('span.cassetteitem_price.cassetteitem_price--administration'),
-                'deposit_tag': item.select_one('span.cassetteitem_price.cassetteitem_price--deposit'),
-                'key_money_tag': item.select_one('span.cassetteitem_price.cassetteitem_price--gratuity'),
-
-                # Property details
-                'floor_cells': item.select('div.cassetteitem-item tr.js-cassette_link td'),
-                'floor_plan_tag': item.select_one('span.cassetteitem_madori'),
-                'area_tag': item.select_one('span.cassetteitem_menseki'),
                 'building_cells': item.select('li.cassetteitem_detail-col3 div'),
 
                 # Pre-computed station information
                 # (returns tuple: stations_str, nearest_station, nearest_dist, avg_dist)              
-                'stations_info': self.parse_station_info(item)
+                'stations_info': self.parse_station_info(item),
+
+                # Building sublistings
+                'sublisting_tags': item.select('tr.js-cassette_link')
             }
             for item in self.listings
         ]
@@ -150,52 +202,48 @@ class TokyoHousingScraper:
         # All conditional checks rely on truthiness:
         #   - BeautifulSoup tag → truthy
         #   - None or empty list → falsy
-        housing_data = [
+        building_data = [
             {
-                # Image URL (some listings omit images)
-                'img': listing['img_tag'].get('rel') if listing['img_tag'] else None,
-
                 # Text-based fields
-                'title': listing['title_tag'].get_text().strip() if listing['title_tag'] else None,
-                'address': listing['address_tag'].get_text().strip() if listing['address_tag'] else None,
-
-                # Pricing fields
-                'rent': listing['rent_tag'].get_text().strip() if listing['rent_tag'] else None,
-                'management_fee': listing['management_fee_tag'].get_text().strip() if listing['management_fee_tag'] else None,
-                'deposit': listing['deposit_tag'].get_text().strip() if listing['deposit_tag'] else None,
-                'key_money': listing['key_money_tag'].get_text().strip() if listing['key_money_tag'] else None,
-
-                # Floor information is stored in a fixed table layout:
-                # index 2 corresponds to the floor number when present
-                'floor': (
-                    listing['floor_cells'][2].get_text().strip() 
-                    if len(listing['floor_cells']) >= 3 
-                    else None
-                ),
-
-                'floor_plan': listing['floor_plan_tag'].get_text().strip() if listing['floor_plan_tag'] else None,
-                'area': listing['area_tag'].get_text().strip() if listing['area_tag'] else None,
+                'title': building['title_tag'].get_text().strip() if building['title_tag'] else None,
+                'address': building['address_tag'].get_text().strip() if building['address_tag'] else None,
 
                 # Building metadata
-                'building_age': listing['building_cells'][0].get_text().strip() if listing['building_cells'] else None,
+                'building_age': building['building_cells'][0].get_text().strip() if building['building_cells'] else None,
                 'building_size': (
-                    listing['building_cells'][1].get_text().strip() 
-                    if len(listing['building_cells']) >= 2 
+                    building['building_cells'][1].get_text().strip() 
+                    if len(building['building_cells']) >= 2 
                     else None
                 ),
 
                 # Station-related features (already parsed and computed)
-                'stations': listing['stations_info'][0],
-                'nearest_station': listing['stations_info'][1],
-                'distance_to_nearest_station': listing['stations_info'][2],
-                'avg_distance_to_stations': listing['stations_info'][3]
+                'stations': building['stations_info'][0],
+                'nearest_station': building['stations_info'][1],
+                'distance_to_nearest_station': building['stations_info'][2],
+                'avg_distance_to_stations': building['stations_info'][3],
+
+                # Building sublistings (which will be parsed with pandas)
+                'sublistings': building['sublisting_tags']
             }
-            for listing in listing_tags
+            for building in building_tags
         ]
 
-        # Convert to DataFrame and load to SQLite
-        housing_data_df = pd.DataFrame(housing_data)
-        housing_data_df.to_sql(name = 'HOUSING_DATA', con = self.conn, if_exists = 'replace', index = False)
+        # Convert to DataFrame
+        housing_data_df = pd.DataFrame(building_data)
+
+        # Explode sublistings into unique rows
+        housing_data_df = housing_data_df.explode('sublistings')
+
+        # Parse sublistings and retrieve listing-level metrics
+        housing_data_df[['url', 'rent', 'management_fee', 'deposit', 'key_money', 'floor', 'floor_plan', 'area']] = (
+            housing_data_df['sublistings'].apply(self.parse_sublistings)
+        )
+
+        # Drop sublistings column after parsing 
+        housing_data_df.drop(columns = ['sublistings'], inplace = True)
+
+        # Load raw, structured housing data to SQLite table
+        housing_data_df.to_sql(name = 'HOUSING_DATA_RAW', con = self.conn, if_exists = 'replace', index = False)
 
         # Close the DB connection
         self.conn.close()
