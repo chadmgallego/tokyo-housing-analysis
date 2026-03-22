@@ -1,4 +1,4 @@
-# Tokyo Housing Database & Price Forecasting
+# Tokyo Rental Market Intelligence & Price Forecasting
 This project analyzes Tokyo’s rental housing landscape to support strategic decisions at Student Mobilization, Inc. The process involves scraping over 1,200 listings from *SUUMO.jp*, storing and organizing the data in an SQLite database, and applying regression models to forecast rental prices based on features such as floor plan, area, and building size. The goal is to streamline housing logistics for new field staff by simplifying the search for affordable and well-located housing options.
 
 ## Key Questions
