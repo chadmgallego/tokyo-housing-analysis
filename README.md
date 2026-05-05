@@ -132,14 +132,17 @@ Field staff relocating to Tokyo face a fragmented, Japanese-language rental mark
 
 | Category | Tools |
 |---|---|
-| **Data Collection** | Python, `requests`, `BeautifulSoup`, `re` |
-| **Storage** | SQLite, SQL Magic (`%sql`) |
+| **Data Collection** | Python, `requests`, `BeautifulSoup`, `lxml`, `re` |
+| **Storage (v1)** | SQLite, SQL Magic (`%sql`) |
+| **Storage (v2)** | Supabase / PostgreSQL, `psycopg2-binary`, `SQLAlchemy` |
 | **Data Processing** | `pandas`, `numpy` |
-| **Feature Engineering** | Raw SQL (CTEs, window functions, `PARTITION BY`) |
+| **Feature Engineering** | Raw SQL (CTEs, window functions, `PARTITION BY`, `REGEXP_REPLACE`) |
 | **EDA & Visualization** | `matplotlib`, `seaborn` |
 | **Modeling** | `scikit-learn` — `LinearRegression`, `StandardScaler`, `OneHotEncoder`, `cross_val_score` |
 | **Statistics** | `scipy.stats` — Pearson correlation, z-test, confidence intervals |
+| **Dashboard** | Chart.js, client-side JS (filtering, sorting, pagination) |
 | **Reporting** | Excel (pivot tables, summary tables, chart data) |
+| **Automation** | cron, `argparse`, mtime-based change detection |
 
 ---
 
