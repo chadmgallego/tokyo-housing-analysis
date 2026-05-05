@@ -47,7 +47,7 @@ Built on top of the original analysis, the v2 pipeline automates the full data l
 SUUMO.jp
     │
     ▼
-pipeline/test_scraper.py        ← scrapes all listings with edge case handling
+pipeline/housing_scraper_pipeline.py  ← scrapes all listings with edge case handling
     ├── Loads raw data → Supabase (housing_data_raw table)
     ├── Creates SQL view → tokyo_housing (cleans + engineers features)
     └── Exports → tokyo_housing.csv
@@ -320,7 +320,7 @@ tokyo-housing-analysis/
 │   ├── data_cleaning_and_features_sqlite.sql      # Feature engineering view (SQLite / v1)
 │   └── data_cleaning_and_features_postgresql.sql  # Feature engineering view (PostgreSQL / v2)
 ├── pipeline/                               # v2 — automated pipeline
-│   ├── scraper.py                          # Scrape → Supabase → CSV
+│   ├── housing_scraper_pipeline.py         # Scrape → Supabase → CSV
 │   └── generate_dashboard.py              # CSV → HTML dashboard
 ├── data/
 │   ├── processed/
