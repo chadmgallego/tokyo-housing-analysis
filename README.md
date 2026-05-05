@@ -2,11 +2,14 @@
 
 A full end-to-end data analytics project covering web scraping, SQL feature engineering, exploratory data analysis, and predictive modeling — applied to Tokyo's rental housing market. Built to support practical housing decisions for incoming field staff relocating to the Nakai area.
 
+> **v2 update:** This project now includes an automated production pipeline (`pipeline/`) that runs on a weekly cron schedule — scraping fresh listings, loading to Supabase (PostgreSQL), and regenerating an interactive HTML dashboard. See [v2 Pipeline](#v2-pipeline) for setup.
+
 ---
 
 ## 📋 Table of Contents
 
 - [Project Overview](#project-overview)
+- [v2 Pipeline](#v2-pipeline)
 - [Business Context & Impact](#business-context--impact)
 - [Tech Stack](#tech-stack)
 - [Project Architecture](#project-architecture)
@@ -31,6 +34,81 @@ The project is structured as four sequential notebooks plus a companion Excel wo
 | `02_exploratory_data_analysis` | Distribution analysis, Pearson correlations, confidence intervals, 8 EDA visualizations |
 | `03_modeling_and_evaluation` | Linear regression (simple + multiple), one-hot encoding, cross-validation, residual analysis |
 | `04_insights_limitations_and_conclusion` | Business-facing summary of findings, limitations, and next steps |
+
+---
+
+## v2 Pipeline
+
+Built on top of the original analysis, the v2 pipeline automates the full data lifecycle on a weekly cron schedule.
+
+### How it works
+
+```
+SUUMO.jp
+    │
+    ▼
+pipeline/test_scraper.py        ← scrapes all listings with edge case handling
+    ├── Loads raw data → Supabase (housing_data_raw table)
+    ├── Creates SQL view → tokyo_housing (cleans + engineers features)
+    └── Exports → tokyo_housing.csv
+    │
+    ▼
+pipeline/generate_dashboard.py  ← detects CSV changes via mtime comparison
+    └── Generates → reports/tokyo_rental_dashboard.html
+```
+
+### Interactive Dashboard
+
+`reports/tokyo_rental_dashboard.html` is a self-contained HTML file — no server needed, open it in any browser.
+
+- 4,600+ listings from West Tokyo
+- Filters: floor plan, area (binned), station, building age
+- KPI cards: total listings, median rent, mean rent, median area, median building age
+- 6 charts: floor plan distribution, avg rent by floor plan, rent by area, building age distribution, top stations by rent, rent vs walk time
+- Paginated listings table (20 per page) with clickable links to SUUMO listings
+
+### Setup
+
+**Requirements:**
+```bash
+pip install requests beautifulsoup4 lxml pandas numpy psycopg2-binary sqlalchemy
+```
+
+**Credentials** — create a `.env` file in the project root (never committed):
+```
+SUPABASE_HOST=db.xxxxxxxxxxxx.supabase.co
+SUPABASE_PORT=5432
+SUPABASE_DB=postgres
+SUPABASE_USER=postgres
+SUPABASE_PASSWORD=your-password-here
+```
+
+**Run the scraper:**
+```bash
+python3 pipeline/test_scraper.py          # full run with Supabase
+python3 pipeline/test_scraper.py --skip-db  # CSV only, no database
+```
+
+**Regenerate the dashboard:**
+```bash
+python3 pipeline/generate_dashboard.py
+```
+
+**Recommended cron schedule** (scrape Sunday 5am, regenerate 6am):
+```bash
+0 5 * * 0 python3 /path/to/pipeline/test_scraper.py >> scraper.log 2>&1
+0 6 * * 0 python3 /path/to/pipeline/generate_dashboard.py >> dashboard.log 2>&1
+```
+
+### v2 improvements over v1
+
+| Area | v1 | v2 |
+|------|----|-----|
+| Storage | SQLite (local) | Supabase / PostgreSQL |
+| Scraper | Basic pagination | Rate limiting, User-Agent, safe error handling |
+| SQL | SQLite view | PostgreSQL-compatible view with safe CAST |
+| Scheduling | Manual | Cron-ready with mtime-based change detection |
+| Output | CSV + notebooks | CSV + interactive HTML dashboard |
 
 ---
 
@@ -226,39 +304,36 @@ The building age and size effects visible in the market summary tables are indep
 
 ```
 tokyo-housing-analysis/
-├── data/
-│   ├── processed/
-│   │   ├── coef_table.csv          # Model coefficient summary
-│   │   ├── model_residuals.csv     # Predicted vs. actual (test set)
-│   │   └── tokyo_housing.csv       # Cleaned dataset (model input)
-│   └── raw/
-│       └── housing_data_raw.csv    # Raw scraped listings
-├── figures/
-│   ├── building_size_box.png
-│   ├── corr_heatmap.png
-│   ├── distance_box.png
-│   ├── floor_box.png
-│   ├── floor_plan_box.png
-│   ├── nearest_station.png
-│   ├── rent_dist.png
-│   ├── rent_vs_age.png
-│   ├── rent_vs_area.png
-│   └── residuals.png
-├── notebooks/
+├── notebooks/                              # v1 — original analysis
 │   ├── 01_data_collection_and_cleaning.ipynb
 │   ├── 02_exploratory_data_analysis.ipynb
 │   ├── 03_modeling_and_evaluation.ipynb
 │   └── 04_insights_limitations_and_conclusion.ipynb
-├── reports/
-│   ├── market_overview_by_floor_plan.png
-│   ├── market_overview_by_station.png
-│   ├── model_overview.png
-│   └── TokyoRentalMarketOverview.xlsx
+├── src/                                    # v1 — original scraper
+│   ├── housing_scraper.py
+│   └── housing_scraper.ipynb
 ├── sql/
-│   └── data_cleaning_and_features.sql
-├── src/
-│   ├── housing_scraper.ipynb
-│   └── housing_scraper.py
+│   └── data_cleaning_and_features.sql      # Feature engineering view (SQLite)
+├── pipeline/                               # v2 — automated pipeline
+│   ├── test_scraper.py                     # Scrape → Supabase → CSV
+│   └── generate_dashboard.py              # CSV → HTML dashboard
+├── data/
+│   ├── processed/
+│   │   ├── coef_table.csv
+│   │   ├── model_residuals.csv
+│   │   └── tokyo_housing.csv
+│   └── raw/
+│       └── housing_data_raw.csv
+├── figures/
+│   ├── rent_dist.png
+│   ├── rent_vs_area.png
+│   ├── rent_vs_age.png
+│   ├── residuals.png
+│   └── ...
+├── reports/
+│   ├── tokyo_rental_dashboard.html         # v2 — interactive dashboard
+│   ├── TokyoRentalMarketOverview.xlsx
+│   └── ...
 └── README.md
 ```
 
