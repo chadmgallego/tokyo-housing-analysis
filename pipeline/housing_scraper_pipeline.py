@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 """
-Test scraper — scrapes SUUMO, loads raw data into Supabase (PostgreSQL),
+Scrapes SUUMO listings, loads raw data into Supabase (PostgreSQL),
 creates a cleaned SQL view, then exports the final dataset to CSV.
 
 Setup:
-    1. pip3 install psycopg2-binary sqlalchemy
-    2. Fill in your Supabase credentials in ../.env
-    3. python3 test_scraper.py
+    1. pip install -r requirements.txt
+    2. Copy .env.example to .env and fill in your Supabase credentials
+    3. python3 pipeline/housing_scraper_pipeline.py
 
 Usage:
-    python3 test_scraper.py                        # full run with Supabase
-    python3 test_scraper.py --output /path/to.csv  # custom CSV output path
-    python3 test_scraper.py --skip-db              # skip Supabase, CSV only
+    python3 pipeline/housing_scraper_pipeline.py                        # full run with Supabase
+    python3 pipeline/housing_scraper_pipeline.py --output /path/to.csv  # custom CSV output path
+    python3 pipeline/housing_scraper_pipeline.py --skip-db              # skip Supabase, CSV only
 """
 
 import re

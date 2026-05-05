@@ -71,10 +71,13 @@ pipeline/generate_dashboard.py  ← detects CSV changes via mtime comparison
 
 **Requirements:**
 ```bash
-pip install requests beautifulsoup4 lxml pandas numpy psycopg2-binary sqlalchemy
+pip install -r requirements.txt
 ```
 
-**Credentials** — create a `.env` file in the project root (never committed):
+**Credentials** — copy `.env.example` to `.env` and fill in your Supabase values (`.env` is never committed):
+```bash
+cp .env.example .env
+```
 ```
 SUPABASE_HOST=db.xxxxxxxxxxxx.supabase.co
 SUPABASE_PORT=5432
@@ -82,11 +85,12 @@ SUPABASE_DB=postgres
 SUPABASE_USER=postgres
 SUPABASE_PASSWORD=your-password-here
 ```
+Find these in: Supabase dashboard → Project Settings → Database → Connection parameters.
 
 **Run the scraper:**
 ```bash
-python3 pipeline/test_scraper.py          # full run with Supabase
-python3 pipeline/test_scraper.py --skip-db  # CSV only, no database
+python3 pipeline/housing_scraper_pipeline.py           # full run with Supabase
+python3 pipeline/housing_scraper_pipeline.py --skip-db  # CSV only, no database
 ```
 
 **Regenerate the dashboard:**
@@ -96,7 +100,7 @@ python3 pipeline/generate_dashboard.py
 
 **Recommended cron schedule** (scrape Sunday 5am, regenerate 6am):
 ```bash
-0 5 * * 0 python3 /path/to/pipeline/test_scraper.py >> scraper.log 2>&1
+0 5 * * 0 python3 /path/to/pipeline/housing_scraper_pipeline.py >> scraper.log 2>&1
 0 6 * * 0 python3 /path/to/pipeline/generate_dashboard.py >> dashboard.log 2>&1
 ```
 
@@ -313,9 +317,10 @@ tokyo-housing-analysis/
 │   ├── housing_scraper.py
 │   └── housing_scraper.ipynb
 ├── sql/
-│   └── data_cleaning_and_features.sql      # Feature engineering view (SQLite)
+│   ├── data_cleaning_and_features_sqlite.sql      # Feature engineering view (SQLite / v1)
+│   └── data_cleaning_and_features_postgresql.sql  # Feature engineering view (PostgreSQL / v2)
 ├── pipeline/                               # v2 — automated pipeline
-│   ├── test_scraper.py                     # Scrape → Supabase → CSV
+│   ├── scraper.py                          # Scrape → Supabase → CSV
 │   └── generate_dashboard.py              # CSV → HTML dashboard
 ├── data/
 │   ├── processed/
@@ -334,6 +339,8 @@ tokyo-housing-analysis/
 │   ├── tokyo_rental_dashboard.html         # v2 — interactive dashboard
 │   ├── TokyoRentalMarketOverview.xlsx
 │   └── ...
+├── requirements.txt
+├── .env.example                            # credential template (copy to .env)
 └── README.md
 ```
 
