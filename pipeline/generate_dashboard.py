@@ -23,7 +23,8 @@ from datetime import datetime
 
 WATCH_DIR = Path(__file__).parent.parent  # repo root, one level above pipeline/
 CSV_FILE = WATCH_DIR / "tokyo_housing.csv"
-OUTPUT_FILE = WATCH_DIR / "tokyo_rental_dashboard.html"
+OUTPUT_FILE = WATCH_DIR / "reports" / "tokyo_rental_dashboard.html"
+PAGES_FILE = WATCH_DIR / "docs" / "index.html"   # served by GitHub Pages
 STATE_FILE = WATCH_DIR / ".dashboard_state.env"
 STATE_KEY = "LAST_CSV_MTIME"
 
@@ -743,7 +744,9 @@ def build_dashboard() -> None:
     stats = compute_stats(rows)
     html = generate_html(rows, stats)
     OUTPUT_FILE.write_text(html, encoding="utf-8")
-    print(f"[{datetime.now().strftime('%H:%M:%S')}] Generated {OUTPUT_FILE.name} — {stats['total']:,} listings")
+    PAGES_FILE.parent.mkdir(exist_ok=True)
+    PAGES_FILE.write_text(html, encoding="utf-8")
+    print(f"[{datetime.now().strftime('%H:%M:%S')}] Generated dashboard — {stats['total']:,} listings")
 
 
 if __name__ == "__main__":

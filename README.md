@@ -59,13 +59,17 @@ pipeline/generate_dashboard.py  ← detects CSV changes via mtime comparison
 
 ### Interactive Dashboard
 
-`reports/tokyo_rental_dashboard.html` is a self-contained HTML file — no server needed, open it in any browser.
+**Live:** [chadmgallego.github.io/tokyo-housing-analysis](https://chadmgallego.github.io/tokyo-housing-analysis)
+
+The dashboard is also available as a self-contained HTML file at `reports/tokyo_rental_dashboard.html` — no server needed, open it in any browser.
 
 - 4,600+ listings from West Tokyo
 - Filters: floor plan, area (binned), station, building age
 - KPI cards: total listings, median rent, mean rent, median area, median building age
 - 6 charts: floor plan distribution, avg rent by floor plan, rent by area, building age distribution, top stations by rent, rent vs walk time
 - Paginated listings table (20 per page) with clickable links to SUUMO listings
+
+`generate_dashboard.py` writes to both `reports/tokyo_rental_dashboard.html` and `docs/index.html` on every run, keeping the live site in sync with the weekly scrape.
 
 ### Setup
 
@@ -338,8 +342,10 @@ tokyo-housing-analysis/
 │   ├── rent_vs_age.png
 │   ├── residuals.png
 │   └── ...
+├── docs/
+│   └── index.html                          # GitHub Pages — live dashboard
 ├── reports/
-│   ├── tokyo_rental_dashboard.html         # v2 — interactive dashboard
+│   ├── tokyo_rental_dashboard.html         # local copy of dashboard
 │   ├── TokyoRentalMarketOverview.xlsx
 │   └── ...
 ├── requirements.txt
