@@ -1,0 +1,21 @@
+# Credentials
+.env
+
+# Cron state
+.dashboard_state.env
+
+# Data files (too large for GitHub)
+tokyo_housing.csv
+*.db
+
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.ipynb_checkpoints/
+
+# Excel
+*.xlsx
