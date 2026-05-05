@@ -163,7 +163,7 @@ TokyoHousingScraper (src/housing_scraper.py)
   └── build_housing_dataset()    # Structured DataFrame → SQLite (HOUSING_DATA_RAW)
       │
       ▼
-SQL View: TOKYO_HOUSING (sql/data_cleaning_and_features.sql)
+SQL View: TOKYO_HOUSING (sql/data_cleaning_and_features_sqlite.sql / _postgresql.sql)
   ├── DEDUPLICATED_LISTINGS      # ROW_NUMBER() deduplication
   ├── STANDARDIZED_LISTINGS      # Type casting, unit normalization, floor plan mapping
   └── FEATURED_LISTINGS          # Window functions: avg_rent_by_station,
@@ -304,10 +304,10 @@ The building age and size effects visible in the market summary tables are indep
 
 **Planned improvements:**
 
-- Automated recurring scraping (daily/weekly) to track listing availability and price movement over time
-- Polynomial feature transformations (`PolynomialFeatures`) with regularization (Ridge/Lasso) to better capture nonlinear relationships
+- Polynomial feature transformations (`PolynomialFeatures`) with regularization (Ridge/Lasso) to better capture nonlinear relationships in `area` and `building_age`
 - Budget-filtered modeling — removing listings above a practical rent ceiling to improve prediction accuracy for the target use case
 - Station-level composition analysis (e.g., avg `building_age` and `floor_plan` mix per station) to explain the apparent price parity across locations
+- Price trend tracking — leveraging the weekly scrape to surface how rents shift over time
 
 ---
 
