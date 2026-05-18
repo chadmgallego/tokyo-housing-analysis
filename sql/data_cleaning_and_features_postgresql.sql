@@ -25,7 +25,7 @@ standardized_listings AS (
     SELECT
         url, title, address,
 
-        -- SUUMO uses '-' as a null placeholder; REGEXP_REPLACE strips non-numeric chars
+        -- SUUMO uses '-' as a null placeholder. REGEXP_REPLACE strips non-numeric chars
         -- before casting so PostgreSQL's strict CAST doesn't error on those values.
         CAST(NULLIF(REGEXP_REPLACE(REPLACE(rent, '万円', ''), '[^0-9.]', '', 'g'), '') AS FLOAT) * 10000 AS rent,
         CAST(NULLIF(REGEXP_REPLACE(REPLACE(management_fee, '円', ''), '[^0-9.]', '', 'g'), '') AS FLOAT) AS management_fee,

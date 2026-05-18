@@ -8,6 +8,15 @@
 tokyo_housing.csv
 *.db
 
+# Test artifacts
+pipeline/test_transformed_listings.csv
+
+# Archive — replaced by multi-agent pipeline
+pipeline/housing_scraper_pipeline_v2.py
+
+# Claude internals
+.claude/
+
 # macOS
 .DS_Store
 
@@ -20,5 +29,5 @@ __pycache__/
 # Excel
 *.xlsx
 
-#logs
+# Logs
 logs/
